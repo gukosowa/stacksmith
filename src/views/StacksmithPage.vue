@@ -36,6 +36,7 @@
 
       <button
         @click="reset()"
+        tabindex="-1"
         class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
         Reset
@@ -162,7 +163,7 @@
           <button
             @click="toggleTemplate(template)"
             :class="[
-              'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 focus:outline-none transition-all duration-150',
+              'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 transition-all duration-150',
               state.templates.has(template.name)
                 ? 'border-blue-500 shadow-lg shadow-blue-500/20'
                 : 'border-gray-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20',
@@ -335,12 +336,12 @@ const FRAMEWORKS: Framework[] = [
               {
                 name: 'port',
                 textInput: { label: 'Port', placeholder: '8000' },
-                multiSelect: false,
+                multiSelect: true,
               },
               {
                 name: 'host',
                 textInput: { label: 'Host', placeholder: '127.0.0.1' },
-                multiSelect: false,
+                multiSelect: true,
               },
             ],
           },
@@ -372,7 +373,6 @@ const updateState = (updates: Partial<typeof state>) => {
 }
 
 const reset = () => {
-  console.log('reset')
   updateState({
     searchQuery: '',
     framework: null,
@@ -550,7 +550,11 @@ const handleKeyboardNavigation = async (event: Event) => {
 watch(
   () => state.searchQuery,
   () => {
-    performSearch()
+    if (state.searchQuery) {
+      performSearch()
+    } else {
+      reset()
+    }
   },
 )
 </script>
