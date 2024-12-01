@@ -296,7 +296,7 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
   if (event.ctrlKey && event.key === 'Delete') {
     event.preventDefault()
     reset()
-    inputRefsSearch.value.focus()
+    inputRefsSearch.value!.focus()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
