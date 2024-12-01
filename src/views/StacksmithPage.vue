@@ -194,8 +194,10 @@
     </div>
 
     <!-- Command Output -->
-    <div class="fixed bottom-6 left-0 right-0 p-6 flex justify-center">
-      <div class="w-full max-w-3xl bg-gray-900 rounded-xl shadow-2xl overflow-hidden">
+    <div class="fixed bottom-6 left-0 right-0 p-6 flex justify-center z-50">
+      <div
+        class="w-full max-w-3xl bg-gray-900/60 backdrop-blur-lg rounded-xl shadow-2xl overflow-hidden"
+      >
         <!-- Terminal Header -->
         <div class="bg-gray-800 px-4 py-2 flex items-center gap-2">
           <div class="flex gap-2">
@@ -258,15 +260,9 @@ import type {
   Template,
 } from '@/utils/frameworks/type.ts'
 import { laravel } from '@/utils/frameworks/laravel.ts'
+import { grep } from '@/utils/frameworks/grep.ts'
 
-const toPascalCase = (str: string): string => {
-  return str
-    .replace(/_/g, ' ')
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
-    .replace(/\s+/g, '')
-}
-
-const FRAMEWORKS: Framework[] = [...laravel]
+const FRAMEWORKS: Framework[] = [...laravel, ...grep]
 
 const state: FrameworkState = reactive({
   searchQuery: '',
@@ -344,6 +340,7 @@ const selectFramework = (fw: Framework) => {
     const firstCategoryButton = document.querySelector('[data-section="category"]') as HTMLElement
     if (firstCategoryButton) {
       firstCategoryButton.focus()
+      firstCategoryButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   })
 }
@@ -359,6 +356,7 @@ const selectCategory = (cat: Category) => {
     const firstOptionButton = document.querySelector('[data-section="option"]') as HTMLElement
     if (firstOptionButton) {
       firstOptionButton.focus()
+      firstOptionButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   })
 }
@@ -372,10 +370,12 @@ const selectOption = (opt: Option) => {
   nextTick(() => {
     if (state.option?.textInput && inputRefsMain.value) {
       inputRefsMain.value.focus()
+      inputRefsMain.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
     } else {
       const firstTemplateButton = document.querySelector('[data-section="template"]') as HTMLElement
       if (firstTemplateButton) {
         firstTemplateButton.focus()
+        firstTemplateButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }
   })
@@ -410,6 +410,7 @@ const toggleTemplate = (template: Template) => {
       const input = inputRefsTemplates[name]
       if (input) {
         input.focus()
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }
   })
@@ -459,9 +460,9 @@ const cmd = computed(() => {
         }
 
         if (template.textInput && templateInput) {
-          command += ` --${templateName}=${templateInput}`
+          command += ` ${templateName}=${templateInput}`
         } else {
-          command += ` --${templateName}`
+          command += ` ${templateName}`
         }
       }
     })
@@ -556,6 +557,28 @@ const performSearch = () => {
       option: null,
     })
   }
+
+  if (found) {
+    nextTick(() => {
+      let targetElement: HTMLElement | null = null
+
+      if (state.option) {
+        targetElement = document.querySelector('[data-section="option"]') as HTMLElement
+      } else if (state.category) {
+        targetElement = document.querySelector('[data-section="category"]') as HTMLElement
+      } else if (state.framework) {
+        targetElement = document.querySelector('[data-section="framework"]') as HTMLElement
+      }
+
+      if (targetElement) {
+        targetElement.focus()
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => {
+          inputRefsSearch.value?.focus()
+        })
+      }
+    })
+  }
 }
 
 const handleKeyboardNavigation = async (event: Event) => {
@@ -567,6 +590,7 @@ const handleKeyboardNavigation = async (event: Event) => {
 
   if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
     inputs[currentIndex + 1].focus()
+    inputs[currentIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' })
   } else {
     if (currentElement.id !== 'inputSearch') {
       // currentElement.blur()
