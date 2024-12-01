@@ -203,7 +203,7 @@
     </div>
 
     <!-- Command Output -->
-    <div class="fixed bottom-6 left-0 right-0 p-6 flex justify-center z-50">
+    <div class="fixed bottom-0 left-0 right-0 p-6 flex justify-center z-50">
       <div
         class="w-full max-w-3xl bg-gray-900/60 backdrop-blur-lg rounded-xl shadow-2xl overflow-hidden"
       >
@@ -620,11 +620,7 @@ const performSearch = () => {
       }
 
       if (targetElement) {
-        targetElement.focus()
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        setTimeout(() => {
-          inputRefsSearch.value?.focus()
-        })
       }
     })
   }
