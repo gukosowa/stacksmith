@@ -4,10 +4,12 @@
     <div class="w-full max-w-md flex gap-2">
       <div class="relative flex-1">
         <input
+          ref="inputRefs.search"
           v-model="state.searchQuery"
           type="text"
           class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Quick search commands (e.g., 'migr' for migrations)"
+          @keyup.enter="handleKeyboardNavigation('search')"
         />
         <button
           v-if="state.searchQuery"
@@ -139,10 +141,12 @@
         state.option.textInput.label
       }}</label>
       <input
+        ref="inputRefs.main"
         v-model="state.inputs.main"
         :placeholder="state.option.textInput.placeholder"
         type="text"
         class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        @keyup.enter="handleKeyboardNavigation('main')"
       />
     </div>
 
@@ -171,10 +175,12 @@
               template.textInput.label
             }}</label>
             <input
+              :ref="(el) => (inputRefs.templates[template.name] = el)"
               v-model="state.inputs.templates[template.name]"
               :placeholder="template.textInput.placeholder"
               type="text"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @keyup.enter="handleKeyboardNavigation('template:' + template.name)"
             />
           </div>
         </div>
@@ -235,7 +241,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 
 type Template = {
   name: string
@@ -251,6 +257,7 @@ type Option = {
 }
 
 type Category = {
+  id?: string
   name: string
   icon?: string
   options: Record<string, Option>
@@ -351,6 +358,16 @@ const state: FrameworkState = reactive({
   errors: {},
 })
 
+const inputRefs = {
+  search: ref<HTMLInputElement | null>(null),
+  main: ref<HTMLInputElement | null>(null),
+  templates: {} as Record<string, HTMLInputElement | null>,
+}
+
+const inputRefsSearch = ref<HTMLInputElement | null>(null)
+const inputRefsMain = ref<HTMLInputElement | null>(null)
+const inputRefsTemplates = reactive({} as Record<string, HTMLInputElement | null>)
+
 const updateState = (updates: Partial<typeof state>) => {
   Object.assign(state, updates)
 }
@@ -432,4 +449,117 @@ const handleCopy = async () => {
     setTimeout(() => (state.copied = false), 2000)
   }
 }
+
+const performSearch = () => {
+  const query = state.searchQuery.trim().toLowerCase()
+  if (!query) {
+    return
+  }
+
+  let found = false
+
+  // Search Options
+  for (const framework of FRAMEWORKS) {
+    for (const [catId, category] of Object.entries(framework.categories)) {
+      for (const [optId, option] of Object.entries(category.options)) {
+        if (optId.toLowerCase().includes(query) || option.name.toLowerCase().includes(query)) {
+          updateState({
+            framework,
+            category: { id: catId, ...category },
+            option: { id: optId, ...option },
+          })
+          found = true
+          break
+        }
+      }
+      if (found) break
+    }
+    if (found) break
+  }
+
+  if (!found) {
+    // Search Categories
+    for (const framework of FRAMEWORKS) {
+      for (const [catId, category] of Object.entries(framework.categories)) {
+        if (catId.toLowerCase().includes(query) || category.name.toLowerCase().includes(query)) {
+          updateState({
+            framework,
+            category: { id: catId, ...category },
+            option: null,
+          })
+          found = true
+          break
+        }
+      }
+      if (found) break
+    }
+  }
+
+  if (!found) {
+    // Search Frameworks
+    for (const framework of FRAMEWORKS) {
+      if (
+        framework.id.toLowerCase().includes(query) ||
+        framework.name.toLowerCase().includes(query)
+      ) {
+        updateState({
+          framework,
+          category: null,
+          option: null,
+        })
+        found = true
+        break
+      }
+    }
+  }
+
+  if (!found) {
+    // No matches, reset selection
+    updateState({
+      framework: null,
+      category: null,
+      option: null,
+    })
+  }
+}
+
+const handleKeyboardNavigation = async (currentInput: string) => {
+  if (currentInput === 'search') {
+    if (state.option?.textInput) {
+      await nextTick()
+      inputRefs.main.value?.focus()
+    }
+  } else if (currentInput === 'main') {
+    if (state.option?.templates && state.option.templates.length > 0) {
+      await nextTick()
+      const firstTemplate = state.option.templates[0]
+      const templateInput = inputRefs.templates[firstTemplate.name]
+      templateInput?.focus()
+    }
+  } else if (currentInput.startsWith('template:')) {
+    const templateName = currentInput.split(':')[1]
+    const index = state.option?.templates?.findIndex((t) => t.name === templateName)
+    if (index !== undefined && index >= 0 && state.option?.templates) {
+      const nextIndex = index + 1
+      for (let i = nextIndex; i < state.option.templates.length; i++) {
+        const nextTemplate = state.option.templates[i]
+        if (state.templates.has(nextTemplate.name) && nextTemplate.textInput) {
+          const nextTemplateInput = inputRefs.templates[nextTemplate.name]
+          if (nextTemplateInput) {
+            await nextTick()
+            nextTemplateInput.focus()
+            return
+          }
+        }
+      }
+    }
+  }
+}
+
+watch(
+  () => state.searchQuery,
+  () => {
+    performSearch()
+  },
+)
 </script>
