@@ -4,12 +4,13 @@
     <div class="w-full max-w-md flex gap-2">
       <div class="relative flex-1">
         <input
-          ref="inputRefs.search"
+          ref="inputRefsSearch"
+          id="inputSearch"
           v-model="state.searchQuery"
           type="text"
           class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Quick search commands (e.g., 'migr' for migrations)"
-          @keyup.enter="handleKeyboardNavigation('search')"
+          @keyup.enter="handleKeyboardNavigation"
         />
         <button
           v-if="state.searchQuery"
@@ -141,12 +142,12 @@
         state.option.textInput.label
       }}</label>
       <input
-        ref="inputRefs.main"
+        ref="inputRefsMain"
         v-model="state.inputs.main"
         :placeholder="state.option.textInput.placeholder"
         type="text"
         class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        @keyup.enter="handleKeyboardNavigation('main')"
+        @keyup.enter="handleKeyboardNavigation"
       />
     </div>
 
@@ -175,12 +176,12 @@
               template.textInput.label
             }}</label>
             <input
-              :ref="(el) => (inputRefs.templates[template.name] = el)"
+              :ref="(el) => (inputRefsTemplates[template.name] = el)"
               v-model="state.inputs.templates[template.name]"
               :placeholder="template.textInput.placeholder"
               type="text"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              @keyup.enter="handleKeyboardNavigation('template:' + template.name)"
+              @keyup.enter="handleKeyboardNavigation"
             />
           </div>
         </div>
@@ -201,13 +202,14 @@
         </div>
 
         <!-- Terminal Content -->
-        <div class="p-4 flex items-start gap-4 flex items-baseline">
+        <div class="p-4 gap-4 flex items-baseline">
           <div class="flex-1 font-mono text-gray-200 whitespace-pre-wrap break-all">
             {{ cmd }}
           </div>
           <button
             @click="handleCopy"
             class="flex items-center gap-2 px-3 py-1.5 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+            :class="{ 'bg-green-700 hover:bg-green-700': state.copied }"
           >
             <span v-if="state.copied">
               <svg
@@ -241,7 +243,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { ref, reactive, computed, watch, nextTick, type Component } from 'vue'
 
 type Template = {
   name: string
@@ -250,6 +252,7 @@ type Template = {
 }
 
 type Option = {
+  id?: string
   name: string
   textInput?: { label: string; placeholder: string }
   templates?: Template[]
@@ -358,15 +361,11 @@ const state: FrameworkState = reactive({
   errors: {},
 })
 
-const inputRefs = {
-  search: ref<HTMLInputElement | null>(null),
-  main: ref<HTMLInputElement | null>(null),
-  templates: {} as Record<string, HTMLInputElement | null>,
-}
-
 const inputRefsSearch = ref<HTMLInputElement | null>(null)
 const inputRefsMain = ref<HTMLInputElement | null>(null)
-const inputRefsTemplates = reactive({} as Record<string, HTMLInputElement | null>)
+const inputRefsTemplates = reactive<Record<string, Component | null>>(
+  {} as Record<string, HTMLInputElement | null>,
+)
 
 const updateState = (updates: Partial<typeof state>) => {
   Object.assign(state, updates)
@@ -428,7 +427,7 @@ const cmd = computed(() => {
 
   if (state.option.templates && state.templates.size > 0) {
     state.templates.forEach((templateName) => {
-      const template = state.option.templates?.find((t) => t.name === templateName)
+      const template = state.option?.templates?.find((t) => t.name === templateName)
       if (template) {
         if (template.textInput && state.inputs.templates[templateName]) {
           command += ` --${templateName}=${state.inputs.templates[templateName]}`
@@ -442,11 +441,18 @@ const cmd = computed(() => {
   return command
 })
 
+let currentTimeout: number | null = null
 const handleCopy = async () => {
   if (cmd.value) {
+    if (currentTimeout) {
+      clearTimeout(currentTimeout)
+      state.copied = false
+
+      await new Promise((resolve) => setTimeout(resolve, 150))
+    }
     await navigator.clipboard.writeText(cmd.value)
     state.copied = true
-    setTimeout(() => (state.copied = false), 2000)
+    currentTimeout = setTimeout(() => (state.copied = false), 2000)
   }
 }
 
@@ -523,35 +529,19 @@ const performSearch = () => {
   }
 }
 
-const handleKeyboardNavigation = async (currentInput: string) => {
-  if (currentInput === 'search') {
-    if (state.option?.textInput) {
-      await nextTick()
-      inputRefs.main.value?.focus()
-    }
-  } else if (currentInput === 'main') {
-    if (state.option?.templates && state.option.templates.length > 0) {
-      await nextTick()
-      const firstTemplate = state.option.templates[0]
-      const templateInput = inputRefs.templates[firstTemplate.name]
-      templateInput?.focus()
-    }
-  } else if (currentInput.startsWith('template:')) {
-    const templateName = currentInput.split(':')[1]
-    const index = state.option?.templates?.findIndex((t) => t.name === templateName)
-    if (index !== undefined && index >= 0 && state.option?.templates) {
-      const nextIndex = index + 1
-      for (let i = nextIndex; i < state.option.templates.length; i++) {
-        const nextTemplate = state.option.templates[i]
-        if (state.templates.has(nextTemplate.name) && nextTemplate.textInput) {
-          const nextTemplateInput = inputRefs.templates[nextTemplate.name]
-          if (nextTemplateInput) {
-            await nextTick()
-            nextTemplateInput.focus()
-            return
-          }
-        }
-      }
+const handleKeyboardNavigation = async (event: Event) => {
+  const currentElement = event.target as HTMLElement
+  const inputs = Array.from(
+    document.querySelectorAll('input, textarea, [tabindex]:not([tabindex="-1"])'),
+  ) as HTMLElement[]
+  const currentIndex = inputs.indexOf(currentElement)
+
+  if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
+    inputs[currentIndex + 1].focus()
+  } else {
+    if (currentElement.id !== 'inputSearch') {
+      currentElement.blur()
+      void handleCopy()
     }
   }
 }
