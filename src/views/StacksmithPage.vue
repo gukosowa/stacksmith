@@ -306,7 +306,7 @@ const FRAMEWORKS: Framework[] = [
         options: {
           'make:migration': {
             name: 'Migration',
-            textInput: { label: 'Migration Name', placeholder: 'create_users_table' },
+            textInput: { label: 'Migration Name', placeholder: 'create user table' },
             inputTransformer: (input: string) => toPascalCase(input),
             templates: [
               { name: 'create', multiSelect: true },
