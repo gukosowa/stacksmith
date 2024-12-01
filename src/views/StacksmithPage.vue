@@ -14,6 +14,7 @@
         />
         <button
           v-if="state.searchQuery"
+          tabindex="-1"
           @click="reset()"
           class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-200 focus:outline-none"
         >
@@ -54,7 +55,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-blue-500',
           state.framework?.id === fw.id
-            ? 'border-blue-500 shadow-lg shadow-blue-500/20'
+            ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-blue-500/20 hover:border-blue-500',
         ]"
         @click="selectFramework(fw)"
@@ -83,7 +84,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-green-500',
           state.category?.id === id
-            ? 'border-green-500 shadow-lg shadow-green-500/20'
+            ? 'border-green-500 border-2 shadow-lg shadow-green-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-green-500/20 hover:border-green-500',
         ]"
         @click="selectCategory({ id, ...cat })"
@@ -112,7 +113,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-red-500',
           state.option?.id === id
-            ? 'border-red-500 shadow-lg shadow-red-500/20'
+            ? 'border-red-500 border-2 shadow-lg shadow-red-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-red-500/20 hover:border-red-500',
         ]"
         @click="selectOption({ id, ...opt })"
@@ -166,7 +167,7 @@
               'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 transition-all duration-150',
               'focus:outline-none focus:ring-4 focus:ring-blue-500',
               state.templates.has(template.name)
-                ? 'border-blue-500 shadow-lg shadow-blue-500/20'
+                ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/20'
                 : 'border-gray-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20',
             ]"
             @keydown.left.prevent="focusPreviousButton($event, index, 'template')"
@@ -207,9 +208,10 @@
 
         <!-- Terminal Content -->
         <div class="p-4 gap-4 flex items-baseline">
-          <div class="flex-1 font-mono text-gray-200 whitespace-pre-wrap break-all">
+          <div class="flex-1 font-mono text-gray-200 whitespace-pre-wrap">
             {{ cmd }}
           </div>
+
           <button
             @click="handleCopy"
             class="flex items-center gap-2 px-3 py-1.5 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
@@ -247,7 +249,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
 type Template = {
   name: string
@@ -375,6 +377,36 @@ const inputRefsMain = ref<HTMLInputElement | null>(null)
 const inputRefsTemplates = reactive<Record<string, HTMLInputElement | null>>(
   {} as Record<string, HTMLInputElement | null>,
 )
+
+const focusSearchInput = (event: KeyboardEvent) => {
+  if (event.ctrlKey && event.key === 'f') {
+    event.preventDefault()
+    if (inputRefsSearch.value) {
+      inputRefsSearch.value.focus()
+    }
+  }
+}
+const handleCtrlEnter = (event: KeyboardEvent) => {
+  if (event.ctrlKey && event.key === 'Enter') {
+    event.preventDefault()
+    // Blur all inputs
+    document.querySelectorAll('input, textarea').forEach((input) => {
+      ;(input as HTMLElement).blur()
+    })
+    // Run handleCopy
+    void handleCopy()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', focusSearchInput)
+  window.addEventListener('keydown', handleCtrlEnter)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', focusSearchInput)
+  window.removeEventListener('keydown', handleCtrlEnter)
+})
 
 const updateState = (updates: Partial<typeof state>) => {
   Object.assign(state, updates)
@@ -624,8 +656,8 @@ const handleKeyboardNavigation = async (event: Event) => {
     inputs[currentIndex + 1].focus()
   } else {
     if (currentElement.id !== 'inputSearch') {
-      currentElement.blur()
-      void handleCopy()
+      // currentElement.blur()
+      // void handleCopy()
     }
   }
 }
