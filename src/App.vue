@@ -21,7 +21,7 @@
 
     <main class="w-full px-4 py-8 bg-gray-950 relative">
       <div
-        class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-gray-800 to-transparent opacity-50"
+        class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-gray-800 to-transparent opacity-50 pointer-events-none"
       ></div>
       <RouterView />
     </main>

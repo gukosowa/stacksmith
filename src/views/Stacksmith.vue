@@ -9,7 +9,7 @@
           v-model="state.searchQuery"
           type="text"
           class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Quick search commands (e.g., 'migr' for migrations)"
+          placeholder="Search (e.g., 'migr' for migrations)"
           @keyup.enter="handleKeyboardNavigation"
         />
         <button
@@ -372,6 +372,7 @@ const updateState = (updates: Partial<typeof state>) => {
 }
 
 const reset = () => {
+  console.log('reset')
   updateState({
     searchQuery: '',
     framework: null,
