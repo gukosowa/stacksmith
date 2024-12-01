@@ -46,23 +46,20 @@
     <!-- Framework Selection -->
     <div class="w-full max-w-md flex gap-4">
       <button
-        v-for="fw in FRAMEWORKS"
+        v-for="(fw, index) in FRAMEWORKS"
         :key="fw.id"
+        :data-section="'framework'"
+        :data-index="index"
         :class="[
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
+          'focus:outline-none focus:ring-4 focus:ring-blue-500',
           state.framework?.id === fw.id
             ? 'border-blue-500 shadow-lg shadow-blue-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-blue-500/20 hover:border-blue-500',
         ]"
-        @click="
-          updateState({
-            framework: fw,
-            category: null,
-            option: null,
-            templates: new Set(),
-            inputs: { main: '', templates: {} },
-          })
-        "
+        @click="selectFramework(fw)"
+        @keydown.left.prevent="focusPreviousButton($event, index, 'framework')"
+        @keydown.right.prevent="focusNextButton($event, index, 'framework')"
       >
         <span
           class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -78,22 +75,20 @@
     <!-- Category Selection -->
     <div v-if="state.framework" class="w-full max-w-md grid grid-cols-2 gap-4">
       <button
-        v-for="(cat, id) in state.framework.categories"
+        v-for="([id, cat], index) in Object.entries(state.framework.categories)"
         :key="id"
+        :data-section="'category'"
+        :data-index="index"
         :class="[
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
+          'focus:outline-none focus:ring-4 focus:ring-green-500',
           state.category?.id === id
             ? 'border-green-500 shadow-lg shadow-green-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-green-500/20 hover:border-green-500',
         ]"
-        @click="
-          updateState({
-            category: { id, ...cat },
-            option: null,
-            templates: new Set(),
-            inputs: { main: '', templates: {} },
-          })
-        "
+        @click="selectCategory({ id, ...cat })"
+        @keydown.left.prevent="focusPreviousButton($event, index, 'category')"
+        @keydown.right.prevent="focusNextButton($event, index, 'category')"
       >
         <span
           class="absolute inset-0 bg-gradient-to-br from-green-500/20 to-green-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -109,21 +104,20 @@
     <!-- Option Selection -->
     <div v-if="state.category" class="w-full max-w-md grid grid-cols-2 gap-4">
       <button
-        v-for="(opt, id) in state.category.options"
+        v-for="([id, opt], index) in Object.entries(state.category.options)"
         :key="id"
+        :data-section="'option'"
+        :data-index="index"
         :class="[
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
+          'focus:outline-none focus:ring-4 focus:ring-red-500',
           state.option?.id === id
             ? 'border-red-500 shadow-lg shadow-red-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-red-500/20 hover:border-red-500',
         ]"
-        @click="
-          updateState({
-            option: { id, ...opt },
-            templates: new Set(),
-            inputs: { main: '', templates: {} },
-          })
-        "
+        @click="selectOption({ id, ...opt })"
+        @keydown.left.prevent="focusPreviousButton($event, index, 'option')"
+        @keydown.right.prevent="focusNextButton($event, index, 'option')"
       >
         <span
           class="absolute inset-0 bg-gradient-to-br from-red-500/20 to-red-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -159,15 +153,24 @@
     >
       <div class="text-lg font-medium text-gray-100 mb-2">{{ state.option.name }} Templates</div>
       <div class="grid grid-cols-2 gap-4">
-        <div v-for="template in state.option.templates" :key="template.name" class="relative">
+        <div
+          v-for="(template, index) in state.option.templates"
+          :key="template.name"
+          class="relative"
+        >
           <button
             @click="toggleTemplate(template)"
+            :data-section="'template'"
+            :data-index="index"
             :class="[
               'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 transition-all duration-150',
+              'focus:outline-none focus:ring-4 focus:ring-blue-500',
               state.templates.has(template.name)
                 ? 'border-blue-500 shadow-lg shadow-blue-500/20'
                 : 'border-gray-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20',
             ]"
+            @keydown.left.prevent="focusPreviousButton($event, index, 'template')"
+            @keydown.right.prevent="focusNextButton($event, index, 'template')"
           >
             {{ template.name }}
           </button>
@@ -177,7 +180,7 @@
               template.textInput.label
             }}</label>
             <input
-              :ref="(el) => (inputRefsTemplates[template.name] = el)"
+              :ref="(el) => (inputRefsTemplates[template.name] = el as HTMLInputElement)"
               v-model="state.inputs.templates[template.name]"
               :placeholder="template.textInput.placeholder"
               type="text"
@@ -244,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick, type Component } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 
 type Template = {
   name: string
@@ -302,10 +305,12 @@ const FRAMEWORKS: Framework[] = [
     icon: '🚀',
     categories: {
       scaffold: {
+        id: 'scaffold',
         name: 'Scaffold',
         icon: '🏗️',
         options: {
           'make:migration': {
+            id: 'make:migration',
             name: 'Migration',
             textInput: { label: 'Migration Name', placeholder: 'create user table' },
             inputTransformer: (input: string) => toPascalCase(input),
@@ -316,6 +321,7 @@ const FRAMEWORKS: Framework[] = [
             ],
           },
           'make:model': {
+            id: 'make:model',
             name: 'Model',
             textInput: { label: 'Model Name', placeholder: 'User' },
             templates: [
@@ -327,10 +333,12 @@ const FRAMEWORKS: Framework[] = [
         },
       },
       command: {
+        id: 'command',
         name: 'Command',
         icon: '⚡',
         options: {
           serve: {
+            id: 'serve',
             name: 'Server',
             templates: [
               {
@@ -364,7 +372,7 @@ const state: FrameworkState = reactive({
 
 const inputRefsSearch = ref<HTMLInputElement | null>(null)
 const inputRefsMain = ref<HTMLInputElement | null>(null)
-const inputRefsTemplates = reactive<Record<string, Component | null>>(
+const inputRefsTemplates = reactive<Record<string, HTMLInputElement | null>>(
   {} as Record<string, HTMLInputElement | null>,
 )
 
@@ -382,6 +390,55 @@ const reset = () => {
     inputs: { main: '', templates: {} },
     copied: false,
     errors: {},
+  })
+}
+
+const selectFramework = (fw: Framework) => {
+  updateState({
+    framework: fw,
+    category: null,
+    option: null,
+    templates: new Set(),
+    inputs: { main: '', templates: {} },
+  })
+  nextTick(() => {
+    const firstCategoryButton = document.querySelector('[data-section="category"]') as HTMLElement
+    if (firstCategoryButton) {
+      firstCategoryButton.focus()
+    }
+  })
+}
+
+const selectCategory = (cat: Category) => {
+  updateState({
+    category: cat,
+    option: null,
+    templates: new Set(),
+    inputs: { main: '', templates: {} },
+  })
+  nextTick(() => {
+    const firstOptionButton = document.querySelector('[data-section="option"]') as HTMLElement
+    if (firstOptionButton) {
+      firstOptionButton.focus()
+    }
+  })
+}
+
+const selectOption = (opt: Option) => {
+  updateState({
+    option: opt,
+    templates: new Set(),
+    inputs: { main: '', templates: {} },
+  })
+  nextTick(() => {
+    if (state.option?.textInput && inputRefsMain.value) {
+      inputRefsMain.value.focus()
+    } else {
+      const firstTemplateButton = document.querySelector('[data-section="template"]') as HTMLElement
+      if (firstTemplateButton) {
+        firstTemplateButton.focus()
+      }
+    }
   })
 }
 
@@ -409,6 +466,32 @@ const toggleTemplate = (template: Template) => {
       state.templates.add(name)
     }
   }
+  nextTick(() => {
+    if (state.templates.has(name) && template.textInput) {
+      const input = inputRefsTemplates[name]
+      if (input) {
+        input.focus()
+      }
+    }
+  })
+}
+
+const focusPreviousButton = (event: KeyboardEvent, currentIndex: number, section: string) => {
+  event.preventDefault()
+  const buttons = Array.from(
+    document.querySelectorAll(`[data-section="${section}"]`),
+  ) as HTMLElement[]
+  const newIndex = (currentIndex - 1 + buttons.length) % buttons.length
+  buttons[newIndex].focus()
+}
+
+const focusNextButton = (event: KeyboardEvent, currentIndex: number, section: string) => {
+  event.preventDefault()
+  const buttons = Array.from(
+    document.querySelectorAll(`[data-section="${section}"]`),
+  ) as HTMLElement[]
+  const newIndex = (currentIndex + 1) % buttons.length
+  buttons[newIndex].focus()
 }
 
 const cmd = computed(() => {
