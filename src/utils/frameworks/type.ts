@@ -1,5 +1,6 @@
 export type Template = {
   name: string
+  command?: string
   multiSelect?: boolean
   textInput?: { label: string; placeholder: string }
   inputTransformer?: (input: string) => string

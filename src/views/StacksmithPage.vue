@@ -73,6 +73,8 @@
       </button>
     </div>
 
+    <BaseLine v-if="state.framework" />
+
     <!-- Category Selection -->
     <div v-if="state.framework" class="w-full max-w-md grid grid-cols-2 gap-4">
       <button
@@ -101,6 +103,8 @@
         </span>
       </button>
     </div>
+
+    <BaseLine color="red" v-if="state.category" />
 
     <!-- Option Selection -->
     <div v-if="state.category" class="w-full max-w-md grid grid-cols-2 gap-4">
@@ -147,6 +151,8 @@
       />
     </div>
 
+    <BaseLine color="blue" v-if="state.option" />
+
     <!-- Templates -->
     <div
       v-if="state.option && state.option.templates && state.option.templates.length > 0"
@@ -174,6 +180,9 @@
             @keydown.right.prevent="focusNextButton($event, index, 'template')"
           >
             {{ template.name }}
+            <span v-if="template.command" class="block font-light text-xs text-gray-300">
+              {{ template.command }}
+            </span>
           </button>
           <!-- Template TextInput -->
           <div v-if="state.templates.has(template.name) && template.textInput" class="mt-2">
@@ -261,6 +270,7 @@ import type {
 } from '@/utils/frameworks/type.ts'
 import { laravel } from '@/utils/frameworks/laravel.ts'
 import { grep } from '@/utils/frameworks/grep.ts'
+import BaseLine from '@/components/BaseLine.vue'
 
 const FRAMEWORKS: Framework[] = [...laravel, ...grep]
 
@@ -439,36 +449,69 @@ const cmd = computed(() => {
     return ''
   }
 
-  let command = `${state.framework.id} ${state.option.id}`
+  // Start with the base command
+  let baseCommand = `${state.framework.id} ${state.option.id}`
 
   if (state.option.textInput && state.inputs.main) {
     let mainInput = state.inputs.main
     if (state.option.inputTransformer) {
       mainInput = state.option.inputTransformer(mainInput)
     }
-    command += ` ${mainInput}`
+    baseCommand += ` ${mainInput}`
   }
+
+  const templateCommands: string[] = []
 
   if (state.option.templates && state.templates.size > 0) {
     state.templates.forEach((templateName) => {
       const template = state.option?.templates?.find((t) => t.name === templateName)
       if (template) {
-        let templateInput = state.inputs.templates[templateName]
+        let templateCommand = ''
 
-        if (template.inputTransformer) {
-          templateInput = template.inputTransformer(templateInput)
-        }
+        if (template.command) {
+          templateCommand = template.command
 
-        if (template.textInput && templateInput) {
-          command += ` ${templateName}=${templateInput}`
+          if (template.textInput && state.inputs.templates[templateName]) {
+            let templateInput = state.inputs.templates[templateName]
+            if (template.inputTransformer) {
+              templateInput = template.inputTransformer(templateInput)
+            }
+
+            if (templateCommand.includes('{input}')) {
+              // Replace '{input}' placeholder with transformed input
+              templateCommand = templateCommand.replace('{input}', templateInput)
+            } else if (templateCommand.endsWith('=')) {
+              // Append transformed input after '='
+              templateCommand += `${templateInput}`
+            } else {
+              // Append transformed input with a space
+              templateCommand += ` ${templateInput}`
+            }
+          }
         } else {
-          command += ` ${templateName}`
+          // If no command is specified, use the template name
+          templateCommand = `${templateName}`
+
+          if (template.textInput && state.inputs.templates[templateName]) {
+            let templateInput = state.inputs.templates[templateName]
+            if (template.inputTransformer) {
+              templateInput = template.inputTransformer(templateInput)
+            }
+            templateCommand += `=${templateInput}`
+          }
         }
+
+        templateCommands.push(templateCommand)
       }
     })
   }
 
-  return command
+  // Combine the base command with any template commands
+  if (templateCommands.length > 0) {
+    return `${baseCommand} ${templateCommands.join(' ')}`
+  } else {
+    return baseCommand
+  }
 })
 
 let currentTimeout: number | null = null
