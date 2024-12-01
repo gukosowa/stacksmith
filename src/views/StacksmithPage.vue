@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center gap-8 p-4">
+  <div class="min-h-screen flex flex-col items-center gap-8 pt-4 px-5 pb-64">
     <!-- Search Section -->
     <div class="w-full max-w-md flex gap-2">
       <div class="relative flex-1">
@@ -250,48 +250,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-
-type Template = {
-  name: string
-  multiSelect?: boolean
-  textInput?: { label: string; placeholder: string }
-}
-
-type Option = {
-  id?: string
-  name: string
-  textInput?: { label: string; placeholder: string }
-  templates?: Template[]
-  inputTransformer?: (input: string) => string
-}
-
-type Category = {
-  id?: string
-  name: string
-  icon?: string
-  options: Record<string, Option>
-}
-
-type Framework = {
-  id: string
-  name: string
-  icon?: string
-  categories: Record<string, Category>
-}
-
-type FrameworkState = {
-  searchQuery: string
-  framework: Framework | null
-  category: Category | null
-  option: Option | null
-  templates: Set<string>
-  inputs: {
-    main: string
-    templates: Record<string, string>
-  }
-  copied: boolean
-  errors: Record<string, string>
-}
+import type {
+  Category,
+  Framework,
+  FrameworkState,
+  Option,
+  Template,
+} from '@/utils/frameworks/type.ts'
+import { laravel } from '@/utils/frameworks/laravel.ts'
 
 const toPascalCase = (str: string): string => {
   return str
@@ -300,66 +266,7 @@ const toPascalCase = (str: string): string => {
     .replace(/\s+/g, '')
 }
 
-const FRAMEWORKS: Framework[] = [
-  {
-    id: 'php artisan',
-    name: 'Laravel',
-    icon: '🚀',
-    categories: {
-      scaffold: {
-        id: 'scaffold',
-        name: 'Scaffold',
-        icon: '🏗️',
-        options: {
-          'make:migration': {
-            id: 'make:migration',
-            name: 'Migration',
-            textInput: { label: 'Migration Name', placeholder: 'create user table' },
-            inputTransformer: (input: string) => toPascalCase(input),
-            templates: [
-              { name: 'create', multiSelect: true },
-              { name: 'table', multiSelect: true },
-              { name: 'update', multiSelect: true },
-            ],
-          },
-          'make:model': {
-            id: 'make:model',
-            name: 'Model',
-            textInput: { label: 'Model Name', placeholder: 'User' },
-            templates: [
-              { name: 'migration', multiSelect: true },
-              { name: 'controller', multiSelect: true },
-              { name: 'factory', multiSelect: true },
-            ],
-          },
-        },
-      },
-      command: {
-        id: 'command',
-        name: 'Command',
-        icon: '⚡',
-        options: {
-          serve: {
-            id: 'serve',
-            name: 'Server',
-            templates: [
-              {
-                name: 'port',
-                textInput: { label: 'Port', placeholder: '8000' },
-                multiSelect: true,
-              },
-              {
-                name: 'host',
-                textInput: { label: 'Host', placeholder: '127.0.0.1' },
-                multiSelect: true,
-              },
-            ],
-          },
-        },
-      },
-    },
-  },
-]
+const FRAMEWORKS: Framework[] = [...laravel]
 
 const state: FrameworkState = reactive({
   searchQuery: '',
@@ -545,8 +452,14 @@ const cmd = computed(() => {
     state.templates.forEach((templateName) => {
       const template = state.option?.templates?.find((t) => t.name === templateName)
       if (template) {
-        if (template.textInput && state.inputs.templates[templateName]) {
-          command += ` --${templateName}=${state.inputs.templates[templateName]}`
+        let templateInput = state.inputs.templates[templateName]
+
+        if (template.inputTransformer) {
+          templateInput = template.inputTransformer(templateInput)
+        }
+
+        if (template.textInput && templateInput) {
+          command += ` --${templateName}=${templateInput}`
         } else {
           command += ` --${templateName}`
         }
