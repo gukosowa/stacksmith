@@ -291,34 +291,40 @@ const inputRefsTemplates = reactive<Record<string, HTMLInputElement | null>>(
   {} as Record<string, HTMLInputElement | null>,
 )
 
-const focusSearchInput = (event: KeyboardEvent) => {
+const handleKeyboardShortcuts = (event: KeyboardEvent) => {
+  // Ctrl+Del => Reset & scroll top
+  if (event.ctrlKey && event.key === 'Delete') {
+    event.preventDefault()
+    reset()
+    inputRefsSearch.value.focus()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Ctrl+F => Focus search & scroll top
   if (event.ctrlKey && event.key === 'f') {
     event.preventDefault()
     if (inputRefsSearch.value) {
       inputRefsSearch.value.focus()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
-}
-const handleCtrlEnter = (event: KeyboardEvent) => {
+
+  // Ctrl+Enter => Blur & copy
   if (event.ctrlKey && event.key === 'Enter') {
     event.preventDefault()
-    // Blur all inputs
     document.querySelectorAll('input, textarea').forEach((input) => {
       ;(input as HTMLElement).blur()
     })
-    // Run handleCopy
     void handleCopy()
   }
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', focusSearchInput)
-  window.addEventListener('keydown', handleCtrlEnter)
+  window.addEventListener('keydown', handleKeyboardShortcuts)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', focusSearchInput)
-  window.removeEventListener('keydown', handleCtrlEnter)
+  window.removeEventListener('keydown', handleKeyboardShortcuts)
 })
 
 const updateState = (updates: Partial<typeof state>) => {
