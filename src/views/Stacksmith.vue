@@ -50,7 +50,15 @@
             ? 'border-blue-500 shadow-lg shadow-blue-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-blue-500/20 hover:border-blue-500',
         ]"
-        @click="updateState({ framework: fw, category: null, option: null })"
+        @click="
+          updateState({
+            framework: fw,
+            category: null,
+            option: null,
+            templates: new Set(),
+            inputs: { main: '', templates: {} },
+          })
+        "
       >
         <span
           class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -74,7 +82,14 @@
             ? 'border-green-500 shadow-lg shadow-green-500/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-green-500/20 hover:border-green-500',
         ]"
-        @click="updateState({ category: { id, ...cat }, option: null, templates: new Set() })"
+        @click="
+          updateState({
+            category: { id, ...cat },
+            option: null,
+            templates: new Set(),
+            inputs: { main: '', templates: {} },
+          })
+        "
       >
         <div
           class="absolute inset-0 bg-gradient-to-br from-green-500/20 to-green-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
@@ -116,6 +131,54 @@
           <span class="block font-light text-xs text-gray-300">{{ id }}</span>
         </span>
       </button>
+    </div>
+
+    <!-- Main Input -->
+    <div v-if="state.option && state.option.textInput" class="w-full max-w-md">
+      <label class="block text-sm font-medium text-gray-100 mb-1">{{
+        state.option.textInput.label
+      }}</label>
+      <input
+        v-model="state.inputs.main"
+        :placeholder="state.option.textInput.placeholder"
+        type="text"
+        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+
+    <!-- Templates -->
+    <div
+      v-if="state.option && state.option.templates && state.option.templates.length > 0"
+      class="w-full max-w-md mt-4"
+    >
+      <div class="text-lg font-medium text-gray-100 mb-2">{{ state.option.name }} Templates</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div v-for="template in state.option.templates" :key="template.name" class="relative">
+          <button
+            @click="toggleTemplate(template)"
+            :class="[
+              'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 focus:outline-none transition-all duration-150',
+              state.templates.has(template.name)
+                ? 'border-blue-500 shadow-lg shadow-blue-500/20'
+                : 'border-gray-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20',
+            ]"
+          >
+            {{ template.name }}
+          </button>
+          <!-- Template TextInput -->
+          <div v-if="state.templates.has(template.name) && template.textInput" class="mt-2">
+            <label class="block text-sm font-medium text-gray-100 mb-1">{{
+              template.textInput.label
+            }}</label>
+            <input
+              v-model="state.inputs.templates[template.name]"
+              :placeholder="template.textInput.placeholder"
+              type="text"
+              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Command Output -->
@@ -174,18 +237,28 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 
+type Template = {
+  name: string
+  multiSelect?: boolean
+  textInput?: { label: string; placeholder: string }
+}
+
 type Option = {
   name: string
+  textInput?: { label: string; placeholder: string }
+  templates?: Template[]
 }
 
 type Category = {
   name: string
+  icon?: string
   options: Record<string, Option>
 }
 
 type Framework = {
   id: string
   name: string
+  icon?: string
   categories: Record<string, Category>
 }
 
@@ -203,43 +276,55 @@ type FrameworkState = {
   errors: Record<string, string>
 }
 
-// Example usage
 const FRAMEWORKS: Framework[] = [
   {
-    id: 'php artisan',
+    id: 'laravel',
     name: 'Laravel',
+    icon: '🚀',
     categories: {
       scaffold: {
         name: 'Scaffold',
+        icon: '🏗️',
         options: {
-          'make:migration': { name: 'Migration' },
-          'make:model': { name: 'Model' },
+          'make:migration': {
+            name: 'Migration',
+            textInput: { label: 'Migration Name', placeholder: 'create_users_table' },
+            templates: [
+              { name: 'create', multiSelect: true },
+              { name: 'table', multiSelect: true },
+              { name: 'update', multiSelect: true },
+            ],
+          },
+          'make:model': {
+            name: 'Model',
+            textInput: { label: 'Model Name', placeholder: 'User' },
+            templates: [
+              { name: 'migration', multiSelect: true },
+              { name: 'controller', multiSelect: true },
+              { name: 'factory', multiSelect: true },
+            ],
+          },
         },
       },
       command: {
         name: 'Command',
+        icon: '⚡',
         options: {
-          serve: { name: 'Serve' },
-        },
-      },
-    },
-  },
-  {
-    id: 'vue',
-    name: 'Vue',
-    categories: {
-      lifecycle: {
-        name: 'Lifecycle',
-        options: {
-          mounted: { name: 'Mounted Hook' },
-          updated: { name: 'Updated Hook' },
-        },
-      },
-      utility: {
-        name: 'Utility',
-        options: {
-          emit: { name: 'Emit Event' },
-          watch: { name: 'Watch Property' },
+          serve: {
+            name: 'Server',
+            templates: [
+              {
+                name: 'port',
+                textInput: { label: 'Port', placeholder: '8000' },
+                multiSelect: false,
+              },
+              {
+                name: 'host',
+                textInput: { label: 'Host', placeholder: '127.0.0.1' },
+                multiSelect: false,
+              },
+            ],
+          },
         },
       },
     },
@@ -274,11 +359,57 @@ const reset = (keepSearch = false) => {
   })
 }
 
+const toggleTemplate = (template: Template) => {
+  const name = template.name
+  if (template.multiSelect) {
+    if (state.templates.has(name)) {
+      state.templates.delete(name)
+      if (template.textInput) {
+        delete state.inputs.templates[name]
+      }
+    } else {
+      state.templates.add(name)
+    }
+  } else {
+    if (state.templates.has(name)) {
+      state.templates.delete(name)
+      if (template.textInput) {
+        delete state.inputs.templates[name]
+      }
+    } else {
+      // Since multiSelect is false, clear other templates
+      state.templates.clear()
+      state.inputs.templates = {}
+      state.templates.add(name)
+    }
+  }
+}
+
 const cmd = computed(() => {
   if (!state.framework || !state.option) {
     return ''
   }
-  return `${state.framework.id} ${state.option.id}`
+
+  let command = `${state.framework.id} ${state.option.id}`
+
+  if (state.option.textInput && state.inputs.main) {
+    command += ` ${state.inputs.main}`
+  }
+
+  if (state.option.templates && state.templates.size > 0) {
+    state.templates.forEach((templateName) => {
+      const template = state.option.templates?.find((t) => t.name === templateName)
+      if (template) {
+        if (template.textInput && state.inputs.templates[templateName]) {
+          command += ` --${templateName}=${state.inputs.templates[templateName]}`
+        } else {
+          command += ` --${templateName}`
+        }
+      }
+    })
+  }
+
+  return command
 })
 
 const handleCopy = async () => {
