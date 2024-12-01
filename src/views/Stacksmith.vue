@@ -32,7 +32,7 @@
       </div>
 
       <button
-        @click="reset(true)"
+        @click="reset()"
         class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
         Reset
@@ -91,7 +91,7 @@
           })
         "
       >
-        <div
+        <span
           class="absolute inset-0 bg-gradient-to-br from-green-500/20 to-green-700/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         />
         <span
@@ -247,6 +247,7 @@ type Option = {
   name: string
   textInput?: { label: string; placeholder: string }
   templates?: Template[]
+  inputTransformer?: (input: string) => string
 }
 
 type Category = {
@@ -276,9 +277,16 @@ type FrameworkState = {
   errors: Record<string, string>
 }
 
+const toPascalCase = (str: string): string => {
+  return str
+    .replace(/_/g, ' ')
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
+    .replace(/\s+/g, '')
+}
+
 const FRAMEWORKS: Framework[] = [
   {
-    id: 'laravel',
+    id: 'php artisan',
     name: 'Laravel',
     icon: '🚀',
     categories: {
@@ -289,6 +297,7 @@ const FRAMEWORKS: Framework[] = [
           'make:migration': {
             name: 'Migration',
             textInput: { label: 'Migration Name', placeholder: 'create_users_table' },
+            inputTransformer: (input: string) => toPascalCase(input),
             templates: [
               { name: 'create', multiSelect: true },
               { name: 'table', multiSelect: true },
@@ -346,9 +355,9 @@ const updateState = (updates: Partial<typeof state>) => {
   Object.assign(state, updates)
 }
 
-const reset = (keepSearch = false) => {
+const reset = () => {
   updateState({
-    searchQuery: keepSearch ? state.searchQuery : '',
+    searchQuery: '',
     framework: null,
     category: null,
     option: null,
@@ -393,7 +402,11 @@ const cmd = computed(() => {
   let command = `${state.framework.id} ${state.option.id}`
 
   if (state.option.textInput && state.inputs.main) {
-    command += ` ${state.inputs.main}`
+    let mainInput = state.inputs.main
+    if (state.option.inputTransformer) {
+      mainInput = state.option.inputTransformer(mainInput)
+    }
+    command += ` ${mainInput}`
   }
 
   if (state.option.templates && state.templates.size > 0) {
