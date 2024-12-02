@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col items-center gap-8 pt-4 px-5 pb-64">
     <!-- Search Section -->
-    <div class="w-full max-w-md flex gap-2">
+    <div class="w-full max-w-md md:max-w-2xl xl:max-w-3xl flex gap-2">
       <div class="relative flex-1">
         <input
           ref="inputRefsSearch"
@@ -45,7 +45,7 @@
     </div>
 
     <!-- Framework Selection -->
-    <div class="w-full max-w-md flex gap-4">
+    <div class="w-full max-w-md md:max-w-2xl xl:max-w-3xl flex gap-4">
       <button
         v-for="(fw, index) in FRAMEWORKS"
         :key="fw.id"
@@ -76,7 +76,10 @@
     <BaseLine v-if="state.framework" />
 
     <!-- Category Selection -->
-    <div v-if="state.framework" class="w-full max-w-md grid grid-cols-2 gap-4">
+    <div
+      v-if="state.framework"
+      class="w-full max-w-md md:max-w-2xl xl:max-w-3xl grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+    >
       <button
         v-for="([id, cat], index) in Object.entries(state.framework.categories)"
         :key="id"
@@ -107,7 +110,10 @@
     <BaseLine color="red" v-if="state.category" />
 
     <!-- Option Selection -->
-    <div v-if="state.category" class="w-full max-w-md grid grid-cols-2 gap-4">
+    <div
+      v-if="state.category"
+      class="w-full max-w-md md:max-w-2xl xl:max-w-3xl grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+    >
       <button
         v-for="([id, opt], index) in Object.entries(state.category.options)"
         :key="id"
@@ -137,7 +143,10 @@
     </div>
 
     <!-- Main Input -->
-    <div v-if="state.option && state.option.textInput" class="w-full max-w-md">
+    <div
+      v-if="state.option && state.option.textInput"
+      class="w-full max-w-md md:max-w xl:max-w-3xl-2xl"
+    >
       <label class="block text-sm font-medium text-gray-100 mb-1">{{
         state.option.textInput.label
       }}</label>
@@ -156,10 +165,10 @@
     <!-- Templates -->
     <div
       v-if="state.option && state.option.templates && state.option.templates.length > 0"
-      class="w-full max-w-md mt-4"
+      class="w-full max-w-md md:max-w-2xl xl:max-w-3xl mt-4"
     >
       <div class="text-lg font-medium text-gray-100 mb-2">{{ state.option.name }} Templates</div>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
         <div
           v-for="(template, index) in state.option.templates"
           :key="template.name"
