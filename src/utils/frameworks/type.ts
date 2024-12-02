@@ -40,4 +40,6 @@ export type FrameworkState = {
   }
   copied: boolean
   errors: Record<string, string>
+  showRefresh: boolean
+  editedCmd: string
 }

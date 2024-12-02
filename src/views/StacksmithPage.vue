@@ -55,7 +55,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-blue-500',
           state.framework?.id === fw.id
-            ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/20'
+            ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/50 bg-gradient-to-br from-blue-500/30 to-blue-700/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-blue-500/20 hover:border-blue-500',
         ]"
         @click="selectFramework(fw)"
@@ -68,7 +68,7 @@
         <span
           class="text-gray-100 text-center text-md font-medium relative z-10 group-hover:text-blue-200"
         >
-          {{ fw.name }}
+          {{ fw.icon }} {{ fw.name }}
         </span>
       </button>
     </div>
@@ -86,7 +86,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-green-500',
           state.category?.id === id
-            ? 'border-green-500 border-2 shadow-lg shadow-green-500/20'
+            ? 'border-green-500 border-2 shadow-lg shadow-green-500/50 bg-gradient-to-br from-green-500/30 to-green-700/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-green-500/20 hover:border-green-500',
         ]"
         @click="selectCategory({ id, ...cat })"
@@ -117,7 +117,7 @@
           'flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl py-2 px-6 border items-center justify-center flex group relative transition-all duration-150',
           'focus:outline-none focus:ring-4 focus:ring-red-500',
           state.option?.id === id
-            ? 'border-red-500 border-2 shadow-lg shadow-red-500/20'
+            ? 'border-red-500 border-2 shadow-lg shadow-red-500/50 bg-gradient-to-br from-red-500/30 to-red-700/20'
             : 'border-gray-700 hover:shadow-lg hover:shadow-red-500/20 hover:border-red-500',
         ]"
         @click="selectOption({ id, ...opt })"
@@ -173,7 +173,7 @@
               'w-full py-2 px-4 bg-gray-800 border rounded-lg text-gray-100 transition-all duration-150',
               'focus:outline-none focus:ring-4 focus:ring-blue-500',
               state.templates.has(template.name)
-                ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/20'
+                ? 'border-blue-500 border-2 shadow-lg shadow-blue-500/50 bg-gradient-to-br from-blue-500/30 to-blue-700/20'
                 : 'border-gray-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20',
             ]"
             @keydown.left.prevent="focusPreviousButton($event, index, 'template')"
@@ -219,10 +219,36 @@
 
         <!-- Terminal Content -->
         <div class="p-4 gap-4 flex items-baseline">
-          <div class="flex-1 font-mono text-gray-200 whitespace-pre-wrap">
-            {{ cmd }}
+          <div
+            class="flex-1 font-mono text-gray-200 whitespace-pre-wrap focus:outline-none relative"
+            contenteditable="true"
+            @input="handleCmdEdit"
+            ref="cmdEditableDiv"
+          >
+            {{ state.editedCmd }}
           </div>
 
+          <!-- Refresh Button -->
+          <button
+            v-if="state.showRefresh"
+            @click="resetEditedCmd"
+            class="flex items-center gap-2 px-3 py-1.5 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+          >
+            <!-- Refresh Icon -->
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            Reset
+          </button>
+
+          <!-- Copy Button -->
           <button
             @click="handleCopy"
             class="flex items-center gap-2 px-3 py-1.5 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
@@ -269,10 +295,10 @@ import type {
   Template,
 } from '@/utils/frameworks/type.ts'
 import { laravel } from '@/utils/frameworks/laravel.ts'
-import { grep } from '@/utils/frameworks/grep.ts'
 import BaseLine from '@/components/BaseLine.vue'
+import { sail } from '@/utils/frameworks/sail.ts'
 
-const FRAMEWORKS: Framework[] = [...laravel, ...grep]
+const FRAMEWORKS: Framework[] = [...laravel, ...sail]
 
 const state: FrameworkState = reactive({
   searchQuery: '',
@@ -283,6 +309,8 @@ const state: FrameworkState = reactive({
   inputs: { main: '', templates: {} },
   copied: false,
   errors: {},
+  editedCmd: '', // Added for editable command
+  showRefresh: false, // Flag to show refresh button
 })
 
 const inputRefsSearch = ref<HTMLInputElement | null>(null)
@@ -290,6 +318,7 @@ const inputRefsMain = ref<HTMLInputElement | null>(null)
 const inputRefsTemplates = reactive<Record<string, HTMLInputElement | null>>(
   {} as Record<string, HTMLInputElement | null>,
 )
+const cmdEditableDiv = ref<HTMLDivElement | null>(null)
 
 const handleKeyboardShortcuts = (event: KeyboardEvent) => {
   // Ctrl+Del => Reset & scroll top
@@ -341,6 +370,8 @@ const reset = () => {
     inputs: { main: '', templates: {} },
     copied: false,
     errors: {},
+    editedCmd: '', // Reset editedCmd
+    showRefresh: false,
   })
 }
 
@@ -514,25 +545,46 @@ const cmd = computed(() => {
 
   // Combine the base command with any template commands
   if (templateCommands.length > 0) {
-    return `${baseCommand} ${templateCommands.join(' ')}`
+    return `${baseCommand} ${templateCommands.join(' ')} `
   } else {
-    return baseCommand
+    return baseCommand + ' '
   }
 })
 
+// Initialize editedCmd with the value of cmd
+watch(
+  cmd,
+  (newCmd) => {
+    state.editedCmd = newCmd
+    state.showRefresh = false
+  },
+  { immediate: true },
+)
+
+const handleCmdEdit = (event: Event) => {
+  const target = event.target as HTMLElement
+  state.editedCmd = target.innerText
+  state.showRefresh = true
+}
+
 let currentTimeout: number | null = null
 const handleCopy = async () => {
-  if (cmd.value) {
+  if (state.editedCmd) {
     if (currentTimeout) {
       clearTimeout(currentTimeout)
       state.copied = false
 
       await new Promise((resolve) => setTimeout(resolve, 150))
     }
-    await navigator.clipboard.writeText(cmd.value)
+    await navigator.clipboard.writeText(state.editedCmd)
     state.copied = true
     currentTimeout = setTimeout(() => (state.copied = false), 2000)
   }
+}
+
+const resetEditedCmd = () => {
+  state.editedCmd = cmd.value
+  state.showRefresh = false
 }
 
 const performSearch = () => {
@@ -638,8 +690,7 @@ const handleKeyboardNavigation = async (event: Event) => {
     inputs[currentIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' })
   } else {
     if (currentElement.id !== 'inputSearch') {
-      // currentElement.blur()
-      // void handleCopy()
+      void handleCopy()
     }
   }
 }
