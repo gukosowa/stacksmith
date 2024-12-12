@@ -1,6 +1,6 @@
 import type { Language } from '@/types/editor'
 
-export const EDITOR_LANGUAGES: readonly Language[] = [
+export const EDITOR_LANGUAGES: Language[] = [
   { id: 'text', name: 'Plain Text' },
   { id: 'javascript', name: 'JavaScript' },
   { id: 'typescript', name: 'TypeScript' },

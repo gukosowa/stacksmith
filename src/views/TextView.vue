@@ -22,5 +22,6 @@ import type { Language } from '@/types/editor'
 const editorState = useEditorState()
 
 const handleLanguageSelect = (lang: Language) => {
-  editorState.setLanguage(lang.id)
-}</script>
+  editorState.setLanguage(lang)
+}
+</script>

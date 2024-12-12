@@ -1,10 +1,12 @@
+import type { Ref } from 'vue'
+
 export interface Language {
-  id: string
+  id: 'text' | 'javascript' | 'typescript' | 'html' | 'css' | 'json' | 'php'
   name: string
 }
 
 export interface EditorProps {
-  language?: string
+  language?: Ref<string>
 }
 
 export interface EditorHeaderProps {

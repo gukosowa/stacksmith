@@ -4,8 +4,9 @@ import { css } from '@codemirror/lang-css'
 import { json } from '@codemirror/lang-json'
 import { php } from '@codemirror/lang-php'
 import type { Extension } from '@codemirror/state'
+import type { Language } from '@/types/editor.ts'
 
-export function getLanguageExtension(lang: string): Extension {
+export function getLanguageExtension(lang: Language['id']): Extension {
   try {
     switch (lang) {
       case 'javascript':
@@ -20,6 +21,8 @@ export function getLanguageExtension(lang: string): Extension {
         return json()
       case 'php':
         return php()
+      case 'text':
+        return []
       default:
         return javascript() // Fallback to JavaScript
     }

@@ -7,35 +7,56 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import EditorLoading from './EditorLoading.vue'
 import EditorShortcuts from './EditorShortcuts.vue'
 import { useEditor } from '@/composables/useEditor'
 import type { EditorProps } from '@/types/editor'
 import '@/assets/editor-theme.css'
+import { EDITOR_CONFIG } from '@/utils/storage/constants.ts'
 
 const props = defineProps<EditorProps>()
 const editorContainer = ref<HTMLElement>()
 const { width, height } = useElementSize(editorContainer)
-const editorState = ref({ isReady: false })
+const editorState = reactive({ isReady: false })
 
 onMounted(() => {
   if (!editorContainer.value) return
-  
-  const editor = useEditor(editorContainer.value, props.language)
-  editor.createEditor()
-  editorState.value = editor
+
+  const editor = useEditor(
+    editorContainer.value,
+    props.language?.value ?? EDITOR_CONFIG.defaultLanguage,
+  )
+  editor.createEditor().then(() => {
+    editorState.isReady = editor.isReady.value
+  })
 
   // Watch for language changes
-  watch(() => props.language, (newLang) => {
-    if (!newLang) return
-    editor.updateLanguage(newLang)
-  }, { immediate: true })
+  watch(
+    () => props.language?.value,
+    (newLang) => {
+      if (!newLang) return
+      editor.updateLanguage(newLang)
+    },
+    { immediate: true },
+  )
 
   // Watch for size changes
   watch([width, height], () => {
     editor.resize()
+  })
+
+  const preventUnload = (e: BeforeUnloadEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.returnValue = '' // Required for certain browsers to display a confirmation dialog
+  }
+
+  window.addEventListener('beforeunload', preventUnload)
+
+  onUnmounted(() => {
+    window.removeEventListener('beforeunload', preventUnload)
   })
 })
 </script>

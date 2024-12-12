@@ -8,7 +8,11 @@ import { EDITOR_CONFIG } from '@/utils/storage/constants'
 
 const db = new EditorDB()
 
-export function useEditor(container: HTMLElement, initialLanguage: string = EDITOR_CONFIG.defaultLanguage) {
+export function useEditor(
+  container: HTMLElement,
+  initialLanguage: string = EDITOR_CONFIG.defaultLanguage,
+) {
+  console.log({ initialLanguage })
   const isReady = ref(false)
   let view: EditorView | null = null
 
@@ -47,6 +51,7 @@ export function useEditor(container: HTMLElement, initialLanguage: string = EDIT
   }
 
   const updateLanguage = async (newLang: string) => {
+    console.log({ newLang })
     if (!view) return
 
     try {
