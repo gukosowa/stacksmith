@@ -53,10 +53,10 @@ onMounted(() => {
     e.returnValue = '' // Required for certain browsers to display a confirmation dialog
   }
 
-  window.addEventListener('beforeunload', preventUnload)
-
-  onUnmounted(() => {
-    window.removeEventListener('beforeunload', preventUnload)
-  })
+  // window.addEventListener('beforeunload', preventUnload)
+  //
+  // onUnmounted(() => {
+  //   window.removeEventListener('beforeunload', preventUnload)
+  // })
 })
 </script>
