@@ -1,0 +1,41 @@
+/* Dark theme variables */
+:root {
+  --cm-background: #111827;
+  --cm-foreground: #e5e7eb;
+  --cm-selection: rgba(59, 130, 246, 0.2);
+  --cm-cursor: #60a5fa;
+  --cm-line-number: #6b7280;
+  --cm-active-line: rgba(55, 65, 81, 0.5);
+}
+
+.cm-editor {
+  background-color: var(--cm-background);
+  color: var(--cm-foreground);
+}
+
+.cm-editor .cm-content {
+  caret-color: var(--cm-cursor);
+}
+
+.cm-editor .cm-cursor {
+  border-left-color: var(--cm-cursor);
+}
+
+.cm-editor .cm-selectionBackground {
+  background: var(--cm-selection) !important;
+}
+
+.cm-editor .cm-gutters {
+  background-color: var(--cm-background);
+  border-right: 1px solid #374151;
+  user-select: none;
+}
+
+.cm-editor .cm-lineNumbers .cm-gutterElement {
+  color: var(--cm-line-number);
+  padding: 0 16px;
+}
+
+.cm-editor .cm-activeLine {
+  background-color: var(--cm-active-line);
+}

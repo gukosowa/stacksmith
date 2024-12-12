@@ -1,13 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import StacksmithPage from '../views/StacksmithPage.vue'
+import CommandView from '../views/CommandView.vue'
+import TextView from '../views/TextView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: StacksmithPage,
+      name: 'cmd',
+      component: CommandView,
+    },
+    {
+      path: '/text',
+      name: 'text',
+      component: TextView,
     },
   ],
 })

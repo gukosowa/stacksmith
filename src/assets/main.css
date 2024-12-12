@@ -1,3 +1,17 @@
+@import '../styles/transitions.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-gray-100;
+  }
+}
+
+@layer components {
+  .transition-base {
+    @apply transition-all duration-200 ease-out;
+  }
+}
